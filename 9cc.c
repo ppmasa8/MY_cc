@@ -21,14 +21,22 @@ struct Token {
 	char *str;      // Token string
 };
 
+// Input programs
+char *user_input;
+
 // Current Token
 Token *token;
 
 // Reports an error location and exit.
-void error(char *fmt, ...) {
+void error_at(char *loc, char *fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
+
+	int pos = loc - user_input;
+	fprintf(stderr, "%s\n", user_input);
+    fprintf(stderr, "%*s", pos, " "); // Output `pos` blanks
+    fprintf(stderr, "^ ");
+    vfprintf(stderr, fmt, ap);
 	fprintf(stderr, "\n");
 	exit(1);
 }
