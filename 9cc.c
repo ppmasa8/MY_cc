@@ -74,37 +74,68 @@ Token *new_token(TokenKind kind, Token *cur, char *str) {
     return tok;
 }
 
+// 入力文字列pをトークナイズしてそれを返す
+Token *tokenize(char *p) {
+    Token head;
+    head.next = NULL;
+    Token *cur = &head;
+
+    while (*p) {
+        // 空白文字をスキップ
+        if (isspace(*p)) {
+            p++;
+            continue;
+        }
+
+        if (*p == '+' || *p == '-') {
+            cur = new_token(TK_RESERVED, cur, p++);
+            continue;
+        }
+
+        if (isdigit(*p)) {
+            cur = new_token(TK_NUM, cur, p);
+            cur->val = strtol(p, &p, 10);
+            continue;
+        }
+
+        error("トークナイズできません");
+    }
+
+    new_token(TK_EOF, cur, p);
+    return head.next;
+}
+
 int main(int argc, char **argv) {
 	if (argc != 2) {
 		fprintf(stderr, "引数の個数が正しくありません\n");
 		return 1;
 	}
 
-	char *p = argv[1];  
+	// トークナイズする
+	token = tokenize(argv[1]);
 
+	// アセンブリの前半
 	printf(".intel_syntax noprefix\n");
 	printf(".globl main\n");
 	printf("main:\n");
-	printf("  mov rax, %ld\n", strtol(p, &p, 10));
 
-	while (*p) {
-		if (*p == '+') {
-			p++;
-			printf("  add rax, %ld\n", strtol(p, &p, 10));
-			continue;
-		}
+	// 式の最初は数でないといけないので、それをチェックして
+	// 最初のmov命令を出力
+	printf("  mov rax, %d\n", expect_number());
 
-		if (*p == '-') {
-			p++;
-			printf("  sub rax, %ld\n", strtol(p, &p, 10));
-			continue;
-		}
+    // `+ <数>`あるいは`- <数>`というトークンの並びを消費しつつ
+    // アセンブリを出力
+    while (!at_eof()) {
+        if (consume('+')) {
+            printf("  add rax, %d\n", expect_number());
+            continue;
+        }
 
-		fprintf(stderr, "予期しない文字です: '%c'\n", *p);
-		return 1;
-	}
+        expect('-');
+        printf("  sub rax, %d\n", expect_number());
+    }
 
-	printf("  ret\n");
-	return 0;
+    printf("  ret\n");
+    return 0;
 }
 
