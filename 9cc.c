@@ -6,26 +6,25 @@
 #include <string.h>
 
 typedef enum {
-	TK_RESERVED, //記号
-	TK_NUM,      //整数トークン
-	TK_EOF,      //入力の終わりを表すトークン
+	TK_RESERVED, // symbol
+	TK_NUM,      // integer
+	TK_EOF,      // string
 } TokenKind;
 
 typedef struct Token Token;
 
-// トークン型
+// struct Token
 struct Token {
-	TokenKind kind; //トークンの型
-	Token *next;    //次の入力トークン
-	int val;        //kindがTK_NUMの場合、その数値
-	char *str;      //トークン文字列
+	TokenKind kind; // Token type
+	Token *next;    // next Token
+	int val;        // as kind is TK_NUM, the integer
+	char *str;      // Token string
 };
 
-//現在着目しているトークン
+// Current Token
 Token *token;
 
-//エラーを報告するための関数
-//printfと同じ引数をとる
+// Reports an error location and exit.
 void error(char *fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);
@@ -34,8 +33,7 @@ void error(char *fmt, ...) {
 	exit(1);
 }
 
-//次のトークンが期待している記号の時には、トークンを一つ読み進めて
-//信を返す。それ以外の場合には偽を返す。
+// Consumes the current token if it matches `op`.
 bool consume(char op) {
 	if (token->kind != TK_RESERVED || token->str[0] != op)
 		return false;
@@ -43,16 +41,14 @@ bool consume(char op) {
 	return true;
 }
 
-//次のトークンが期待している記号の時には、トークンを１つ読み進める。
-//それ以外の場合にはエラーを報告する。
+// Ensure that the current token is `op`.
 void expect(char op) {
 	if (token->kind != TK_RESERVED || token->str[0] != op)
 		error("'%c'ではありません", op);
 	token = token->next;
 }
 
-//次のトークンが数値の場合、トークンを1つ読み進めてその数値を返す。
-//それ以外の場合にはエラーを報告する。
+// Ensure that the current token is TK_NUM
 int expect_number() {
 	if (token->kind != TK_NUM)
 		error("数ではありません");
@@ -65,7 +61,7 @@ bool at_eof() {
 	return token->kind == TK_EOF;
 }
 
-// 新しいトークンを作成してcurにつなげる
+// Create token and join `cur`
 Token *new_token(TokenKind kind, Token *cur, char *str) {
     Token *tok = calloc(1, sizeof(Token));
     tok->kind = kind;
@@ -74,14 +70,14 @@ Token *new_token(TokenKind kind, Token *cur, char *str) {
     return tok;
 }
 
-// 入力文字列pをトークナイズしてそれを返す
+// Input string `p` tokenize returns new tokens.
 Token *tokenize(char *p) {
     Token head;
     head.next = NULL;
     Token *cur = &head;
 
     while (*p) {
-        // 空白文字をスキップ
+        // skip blanks
         if (isspace(*p)) {
             p++;
             continue;
@@ -111,20 +107,19 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	// トークナイズする
+	// Do tokenize
 	token = tokenize(argv[1]);
 
-	// アセンブリの前半
+	// Front assembly
 	printf(".intel_syntax noprefix\n");
 	printf(".globl main\n");
 	printf("main:\n");
 
-	// 式の最初は数でないといけないので、それをチェックして
-	// 最初のmov命令を出力
+	// Ensure TK_NUM at initial formula and output mov order.
 	printf("  mov rax, %d\n", expect_number());
 
-    // `+ <数>`あるいは`- <数>`というトークンの並びを消費しつつ
-    // アセンブリを出力
+    // `+ <nums>`or`- <nums>`that token consume.
+    // Output assembly
     while (!at_eof()) {
         if (consume('+')) {
             printf("  add rax, %d\n", expect_number());
