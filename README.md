@@ -5,7 +5,7 @@ Micro C Compiler.
 - step2 completed
 - step3 completed
 - step4 completed
-
+- step5 completed
 
 ### Reference
 https://www.sigbus.info/compilerbook#docker
